@@ -170,10 +170,10 @@ public class TupleDesc implements Serializable {
      * @return the new TupleDesc
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
-        Set<TDItem> itemSet = new HashSet<>(td1.items.size() + td2.items.size());
-        itemSet.addAll(td1.items);
-        itemSet.addAll(td2.items);
-        return new TupleDesc(new ArrayList<>(itemSet));
+        ArrayList<TDItem> items = new ArrayList<>(td1.items.size() + td2.items.size());
+        items.addAll(td1.items);
+        items.addAll(td2.items);
+        return new TupleDesc(items);
     }
 
     /**
