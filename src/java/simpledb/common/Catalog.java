@@ -1,6 +1,5 @@
 package simpledb.common;
 
-import simpledb.common.Type;
 import simpledb.storage.DbFile;
 import simpledb.storage.HeapFile;
 import simpledb.storage.TupleDesc;
@@ -23,12 +22,28 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    public class Table {
+        private DbFile file;
+        private String name;
+        private String pKeyField;
+
+        public Table(DbFile file, String name, String pKeyField) {
+            this.file = file;
+            this.name = name;
+            this.pKeyField = pKeyField;
+        }
+    }
+
+    private Map<Integer, Table> tables;
+
+    private Map<String, Integer> nameToId;
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        tables = new ConcurrentHashMap<>();
+        nameToId = new ConcurrentHashMap<>();
     }
 
     /**
@@ -38,10 +53,12 @@ public class Catalog {
      *    this file/tupledesc param for the calls getTupleDesc and getFile
      * @param name the name of the table -- may be an empty string.  May not be null.  If a name
      * conflict exists, use the last table to be added as the table for a given name.
-     * @param pkeyField the name of the primary key field
+     * @param pKeyField the name of the primary key field
      */
-    public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+    public void addTable(DbFile file, String name, String pKeyField) {
+        Integer tableId = file.getId();
+        tables.put(tableId, new Table(file, name, pKeyField));
+        nameToId.put(name, tableId);
     }
 
     public void addTable(DbFile file, String name) {
@@ -64,50 +81,60 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        if (name == null || !nameToId.containsKey(name)) {
+            throw new NoSuchElementException(String.format("Table name: %s isn't exist", name));
+        }
+        return nameToId.get(name);
     }
 
     /**
      * Returns the tuple descriptor (schema) of the specified table
-     * @param tableid The id of the table, as specified by the DbFile.getId()
+     * @param tableId The id of the table, as specified by the DbFile.getId()
      *     function passed to addTable
      * @throws NoSuchElementException if the table doesn't exist
      */
-    public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+    public TupleDesc getTupleDesc(int tableId) throws NoSuchElementException {
+        if (!tables.containsKey(tableId)) {
+            throw new NoSuchElementException(String.format("Table id: %s isn't exist", tableId));
+        }
+        return tables.get(tableId).file.getTupleDesc();
     }
 
     /**
      * Returns the DbFile that can be used to read the contents of the
      * specified table.
-     * @param tableid The id of the table, as specified by the DbFile.getId()
+     * @param tableId The id of the table, as specified by the DbFile.getId()
      *     function passed to addTable
      */
-    public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+    public DbFile getDatabaseFile(int tableId) throws NoSuchElementException {
+        if (!tables.containsKey(tableId)) {
+            throw new NoSuchElementException(String.format("Table id: %s isn't exist", tableId));
+        }
+        return tables.get(tableId).file;
     }
 
-    public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+    public String getPrimaryKey(int tableId) {
+        if (!tables.containsKey(tableId)) {
+            throw new NoSuchElementException(String.format("Table id: %s isn't exist", tableId));
+        }
+        return tables.get(tableId).pKeyField;
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        return tables.keySet().iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        if (!tables.containsKey(id)) {
+            throw new NoSuchElementException(String.format("Table id: %s isn't exist", id));
+        }
+        return tables.get(id).name;
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        nameToId.clear();
+        tables.clear();
     }
     
     /**
